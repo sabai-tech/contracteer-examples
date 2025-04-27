@@ -1,0 +1,527 @@
+openapi: 3.0.4
+info:
+  title: Musketeer Missions API
+  version: 1.0.0
+  description: |
+    API for assigning and tracking missions carried out by royal musketeers.
+    This API allows the King's officials to manage the elite force of musketeers,
+    assign them missions, and track the progress of those missions.
+  contact:
+    name: Royal Musketeer Headquarters
+    email: api@musketeer-hq.fr
+    url: https://musketeer-hq.fr
+  license:
+    name: Royal License
+    url: https://musketeer-hq.fr/license
+
+tags:
+  - name: Musketeers
+    description: Operations related to musketeer management
+  - name: Missions
+    description: Operations related to mission management
+
+paths:
+  /musketeers:
+    get:
+      operationId: listMusketeers
+      tags:
+        - Musketeers
+      summary: List all musketeers
+      description: Returns a list of all musketeers in service to the King
+      responses:
+        '200':
+          description: A list of musketeers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Musketeer'
+
+    post:
+      operationId: createMusketeer
+      tags:
+        - Musketeers
+      summary: Create a new musketeer
+      description: Adds a new musketeer to the King's service
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: The musketeer's name
+                rank:
+                  type: string
+                  enum: [Cadet, Musketeer, Captain]
+                  description: The musketeer's rank
+              required: [name, rank]
+            examples:
+              BAD_REQUEST:
+                value:
+                  name: Milady
+                  rank: Musketeer
+      responses:
+        '201':
+          description: Musketeer successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Musketeer'
+        '400':
+          $ref: "#/components/responses/BadRequest"
+
+  /musketeers/{musketeerId}:
+    get:
+      operationId: getMusketeer
+      tags:
+        - Musketeers
+      summary: Get details of a specific musketeer
+      description: Returns detailed information about a specific musketeer
+      parameters:
+        - name: musketeerId
+          in: path
+          description: Unique identifier of the musketeer
+          required: true
+          schema:
+            type: string
+            format: uuid
+          examples:
+            NOT_FOUND:
+              value: "e61a1f33-e9a9-4483-b091-6d48fcbc4c18"
+      responses:
+        '200':
+          description: Musketeer details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Musketeer'
+        '404':
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      operationId: deleteMusketeer
+      tags:
+        - Musketeers
+      summary: Remove a musketeer
+      description: Removes a musketeer from the King's service
+      parameters:
+        - name: musketeerId
+          in: path
+          description: Unique identifier of the musketeer
+          required: true
+          schema:
+            type: string
+            format: uuid
+          examples:
+            NOT_FOUND:
+              value: 'e61a1f33-e9a9-4483-b091-6d48fcbc4c18'
+      responses:
+        '204':
+          description: Musketeer successfully removed
+        '404':
+          $ref: "#/components/responses/NotFound"
+
+  /missions:
+    get:
+      operationId: listMissions
+      tags:
+        - Missions
+      summary: List all missions
+      description: Returns a list of all missions, optionally filtered by status
+      parameters:
+        - name: status
+          in: query
+          description: Filter missions by status
+          required: false
+          schema:
+            type: string
+            enum: [Assigned, InProgress, Completed, Failed]
+        - name: assignedTo
+          in: query
+          description: Filter missions by assigned musketeer ID
+          required: false
+          schema:
+            type: string
+            format: uuid
+          examples:
+            BAD_REQUEST:
+              value: 'e61a1f33-e9a9-4483-b091-6d48fcbc4c18'
+        - name: limit
+          in: query
+          description: Maximum number of missions to return
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: A list of missions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Mission'
+        '400':
+          $ref: "#/components/responses/BadRequest"
+
+    post:
+      operationId: createMission
+      tags:
+        - Missions
+      summary: Assign a new mission
+      description: Creates a new mission and assigns it to a musketeer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MissionRequest'
+            examples:
+              BAD_REQUEST:
+                value:
+                  title: "Escort the King to Notre Dame"
+                  description: "Provide security detail for the King's visit to Notre Dame Cathedral"
+                  assignedTo: "e61a1f33-e9a9-4483-b091-6d48fcbc4c18" # unknown musketeer
+                  priority: "High"
+      responses:
+        '201':
+          description: Mission successfully assigned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mission'
+        '400':
+          $ref: "#/components/responses/BadRequest"
+
+  /missions/{missionId}:
+    get:
+      operationId: getMission
+      tags:
+        - Missions
+      summary: Get details of a specific mission
+      description: Returns detailed information about a specific mission
+      parameters:
+        - name: missionId
+          in: path
+          description: Unique identifier of the mission
+          required: true
+          schema:
+            type: string
+            format: uuid
+          examples:
+            NOT_FOUND:
+              value: "e61a1f33-e9a9-4483-b091-6d48fcbc4c18"
+      responses:
+        '200':
+          description: Mission details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mission'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+
+  /missions/{missionId}/start:
+    post:
+      operationId: startMission
+      tags:
+        - Missions
+      summary: Mark a mission as in progress
+      description: Updates the status of a mission to indicate it has been started
+      parameters:
+        - name: missionId
+          in: path
+          description: Unique identifier of the mission
+          required: true
+          schema:
+            type: string
+            format: uuid
+          examples:
+            START_MISSION_SUCCESS:
+              value: "550e8400-e29b-41d4-a716-446655440010"
+            NOT_FOUND:
+              value: "e61a1f33-e9a9-4483-b091-6d48fcbc4c18"
+            MISSION_INVALID_STATE:
+              value: "1777c116-b0f5-403b-adb9-cdaae92b9b84"
+      responses:
+        '200':
+          description: Mission marked as in progress
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mission'
+              examples:
+                START_MISSION_SUCCESS:
+                  value:
+                    id: "550e8400-e29b-41d4-a716-446655440010"
+                    title: "Protect the Queen's jewels"
+                    description: "Ensure the safe transport of the Queen's jewels to the royal ball"
+                    assignedTo: "550e8400-e29b-41d4-a716-446655440000"
+                    status: "InProgress"
+                    priority: "High"
+                    createdAt: "2023-04-10T14:30:00Z"
+                    updatedAt: "2023-04-11T08:00:00Z"
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '400':
+          description: Invalid mission state transition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                MISSION_STATE_TRANSITION_ERROR:
+                  value:
+                    code: "INVALID_STATE_TRANSITION"
+                    message: "Cannot start a mission that is not in 'Assigned' status"
+
+  /missions/{missionId}/complete:
+    post:
+      operationId: completeMission
+      tags:
+        - Missions
+      summary: Mark a mission as completed
+      description: Updates the status of a mission to indicate it has been successfully completed
+      parameters:
+        - name: missionId
+          in: path
+          description: Unique identifier of the mission
+          required: true
+          schema:
+            type: string
+            format: uuid
+          examples:
+            MISSION_COMPLETED_SUCCESS:
+              value: "550e8400-e29b-41d4-a716-446655440010"
+            NOT_FOUND:
+              value: "e61a1f33-e9a9-4483-b091-6d48fcbc4c18"
+            MISSION_INVALID_STATE:
+              value: "1777c116-b0f5-403b-adb9-cdaae92b9b84"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                report:
+                  type: string
+                  description: A report on the mission outcome
+      responses:
+        '200':
+          description: Mission marked as completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mission'
+              examples:
+                MISSION_COMPLETED_SUCCESS:
+                  value:
+                    id: "550e8400-e29b-41d4-a716-446655440010"
+                    title: "Protect the Queen's jewels"
+                    description: "Ensure the safe transport of the Queen's jewels to the royal ball"
+                    assignedTo: "550e8400-e29b-41d4-a716-446655440000"
+                    status: "Completed"
+                    priority: "High"
+                    createdAt: "2023-04-10T14:30:00Z"
+                    updatedAt: "2023-04-11T22:15:00Z"
+                    report: "Mission completed successfully. The Queen's jewels were safely delivered to the royal ball."
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '400':
+          description: Invalid mission state transition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                MISSION_INVALID_STATE:
+                  value:
+                    code: "INVALID_STATE_TRANSITION"
+                    message: "Cannot complete a mission that is not in 'InProgress' status"
+
+  /missions/{missionId}/fail:
+    post:
+      operationId: failMission
+      tags:
+        - Missions
+      summary: Mark a mission as failed
+      description: Updates the status of a mission to indicate it has failed
+      parameters:
+        - name: missionId
+          in: path
+          description: Unique identifier of the mission
+          required: true
+          schema:
+            type: string
+            format: uuid
+          examples:
+            MISSION_FAILED_SUCCESS:
+              value: "550e8400-e29b-41d4-a716-446655440010"
+            NOT_FOUND:
+              value: "e61a1f33-e9a9-4483-b091-6d48fcbc4c18"
+            MISSION_INVALID_STATE:
+              value: "1777c116-b0f5-403b-adb9-cdaae92b9b84"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  description: The reason for the mission failure
+              required: [reason]
+      responses:
+        '200':
+          description: Mission marked as failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mission'
+              examples:
+                MISSION_FAILED_SUCCESS:
+                  value:
+                    id: "550e8400-e29b-41d4-a716-446655440010"
+                    title: "Protect the Queen's jewels"
+                    description: "Ensure the safe transport of the Queen's jewels to the royal ball"
+                    assignedTo: "550e8400-e29b-41d4-a716-446655440000"
+                    status: "Failed"
+                    priority: "High"
+                    createdAt: "2023-04-10T14:30:00Z"
+                    updatedAt: "2023-04-11T18:45:00Z"
+                    failureReason: "Ambushed by the Cardinal's Guards. Had to retreat to ensure the safety of the King."
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '400':
+          description: Invalid mission state transition or missing required fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                MISSION_INVALID_STATE:
+                  value:
+                    code: "INVALID_STATE_TRANSITION"
+                    message: "Cannot fail a mission that is not in 'Assigned' or 'InProgress' status"
+
+components:
+  schemas:
+    Musketeer:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the musketeer
+        name:
+          type: string
+          description: The musketeer's name
+        rank:
+          type: string
+          enum: [Cadet, Musketeer, Captain]
+          description: The musketeer's rank in the King's service
+        joinedAt:
+          type: string
+          format: date-time
+          description: When the musketeer joined the King's service
+      required: [id, name, rank]
+
+    MissionRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          description: Brief title describing the mission
+          minLength: 5
+          maxLength: 100
+        description:
+          type: string
+          description: Detailed description of the mission objectives
+          maxLength: 1000
+        assignedTo:
+          type: string
+          format: uuid
+          description: ID of the musketeer assigned to the mission
+        priority:
+          type: string
+          enum: [Low, Medium, High, Critical]
+          description: The priority level of the mission
+          default: Medium
+      required: [title, assignedTo]
+
+    Mission:
+      allOf:
+        - $ref: '#/components/schemas/MissionRequest'
+        - type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+              description: Unique identifier for the mission
+            status:
+              type: string
+              enum: [Assigned, InProgress, Completed, Failed]
+              description: Current status of the mission
+            createdAt:
+              type: string
+              format: date-time
+              description: When the mission was created
+            updatedAt:
+              type: string
+              format: date-time
+              description: When the mission was last updated
+            report:
+              type: string
+              description: Report submitted upon mission completion
+            failureReason:
+              type: string
+              description: Reason provided if the mission failed
+          required: [id, status, createdAt]
+
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Error code
+        message:
+          type: string
+          description: Error message
+      required: [code, message]
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            BAD_REQUEST:
+              value:
+                code: "BAD_REQUEST"
+                message: "The request contains invalid parameters"
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            NOT_FOUND:
+              value:
+                code: "RESOURCE_NOT_FOUND"
+                message: "The requested resource was not found"
+
+
