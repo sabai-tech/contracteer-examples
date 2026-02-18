@@ -1,0 +1,280 @@
+openapi: 3.0.0
+info:
+  title: Musketeer API
+  version: '1.0'
+  description: >
+    API for managing musketeers and their missions.
+servers:
+  - url: 'http://localhost:8080'
+
+paths:
+  /musketeers/{name}:
+    get:
+      summary: Get a musketeer by name
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+          examples:
+            ATHOS:
+              value: Athos
+            PORTHOS:
+              value: Porthos
+      responses:
+        '200':
+          description: Musketeer found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Musketeer'
+              examples:
+                ATHOS:
+                  value:
+                    name: Athos
+                    rank: MUSKETEER
+                    weapon: Rapier
+                PORTHOS:
+                  value:
+                    name: Porthos
+                    rank: MUSKETEER
+                    weapon: Musket
+
+  /musketeers:
+    post:
+      summary: Enlist a new musketeer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Musketeer'
+            examples:
+              D_ARTAGNAN_JOINS:
+                value:
+                  name: D_Artagnan
+                  rank: CADET
+                  weapon: Rapier
+      responses:
+        '201':
+          description: Musketeer enlisted
+          headers:
+            Location:
+              schema:
+                type: string
+              examples:
+                D_ARTAGNAN_JOINS:
+                  value: /musketeers/D_Artagnan
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /missions/{id}:
+    get:
+      summary: Get a mission by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          examples:
+            DIAMOND_STUDS:
+              value: 1
+            SIEGE_OF_LA_ROCHELLE:
+              value: 2
+      responses:
+        '200':
+          description: Mission found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mission'
+              examples:
+                DIAMOND_STUDS:
+                  value:
+                    id: 1
+                    title: The Diamond Studs
+                    description: >-
+                      Retrieve the Queen's diamond studs
+                      from the Duke of Buckingham
+                    status: COMPLETED
+                    musketeers:
+                      - Athos
+                      - Porthos
+                      - Aramis
+                      - D_Artagnan
+                SIEGE_OF_LA_ROCHELLE:
+                  value:
+                    id: 2
+                    title: The Siege of La Rochelle
+                    description: >-
+                      Defend the bastion Saint-Gervais
+                      during the siege
+                    status: COMPLETED
+                    musketeers:
+                      - Athos
+                      - Porthos
+                      - Aramis
+                      - D_Artagnan
+        '400':
+          description: Invalid mission ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /missions:
+    post:
+      summary: Create a new mission
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Mission'
+            examples:
+              RESCUE_CONSTANCE:
+                value:
+                  id: 3
+                  title: Rescue Constance
+                  description: >-
+                    Free Constance Bonacieux from
+                    the clutches of Milady de Winter
+                  status: PLANNED
+                  musketeers:
+                    - D_Artagnan
+                    - Athos
+      responses:
+        '201':
+          description: Mission created
+          headers:
+            Location:
+              schema:
+                type: string
+              examples:
+                RESCUE_CONSTANCE:
+                  value: /missions/3
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /musketeers/{name}/missions:
+    get:
+      summary: Get missions assigned to a musketeer
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+          examples:
+            ATHOS_MISSIONS:
+              value: Athos
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - PLANNED
+              - IN_PROGRESS
+              - COMPLETED
+          examples:
+            ATHOS_MISSIONS:
+              value: COMPLETED
+      responses:
+        '200':
+          description: List of missions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Mission'
+              examples:
+                ATHOS_MISSIONS:
+                  value:
+                    - id: 1
+                      title: The Diamond Studs
+                      description: >-
+                        Retrieve the Queen's diamond studs
+                        from the Duke of Buckingham
+                      status: COMPLETED
+                      musketeers:
+                        - Athos
+                        - Porthos
+                        - Aramis
+                        - D_Artagnan
+                    - id: 2
+                      title: The Siege of La Rochelle
+                      description: >-
+                        Defend the bastion Saint-Gervais
+                        during the siege
+                      status: COMPLETED
+                      musketeers:
+                        - Athos
+                        - Porthos
+                        - Aramis
+                        - D_Artagnan
+
+components:
+  schemas:
+    Musketeer:
+      type: object
+      required:
+        - name
+        - rank
+        - weapon
+      properties:
+        name:
+          type: string
+        rank:
+          type: string
+          enum:
+            - CADET
+            - MUSKETEER
+            - CAPTAIN
+        weapon:
+          type: string
+
+    Mission:
+      type: object
+      required:
+        - id
+        - title
+        - description
+        - status
+        - musketeers
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum:
+            - PLANNED
+            - IN_PROGRESS
+            - COMPLETED
+        musketeers:
+          type: array
+          items:
+            type: string
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        details:
+          type: string
