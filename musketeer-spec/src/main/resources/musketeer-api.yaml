@@ -1,0 +1,478 @@
+# =============================================================================
+# Musketeer API — OpenAPI Specification
+#
+# This specification demonstrates Contracteer features:
+#
+# - Named examples (examples keyword) for scenario extraction
+# - Single example (example keyword) for scenario extraction
+# - Status-code-prefixed example keys (404_*, 400_*) for targeting specific
+#   response status codes without requiring matching response examples
+# - Correlated examples across request parameters, headers, and response bodies
+# - Automatic 400 verification case generation from schema constraints
+# - $ref references in examples (components/examples)
+# - RFC 7807 Problem Details for error responses (application/problem+json)
+# =============================================================================
+
+openapi: 3.0.4
+info:
+  title: Musketeer API
+  version: '1.0'
+  description: >-
+    API for managing musketeers and their missions.
+servers:
+  - url: 'http://localhost:8080'
+
+paths:
+
+  # ---------------------------------------------------------------------------
+  # Musketeers
+  # ---------------------------------------------------------------------------
+  /musketeers:
+    get:
+      summary: List all musketeers
+      # [Contracteer] No examples — Contracteer generates a verification case
+      # from the schema alone (schema-only fallback).
+      responses:
+        '200':
+          description: List of musketeers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Musketeer'
+
+    post:
+      summary: Enlist a new musketeer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMusketeer'
+            # [Contracteer] Named examples — each key becomes a scenario when
+            # a response example shares the same key (intersection rule).
+            examples:
+              D_ARTAGNAN_JOINS:
+                value:
+                  name: d'Artagnan
+                  rank: CADET
+                  weapon: Rapier
+              # [Contracteer] Status-code-prefixed key (400_*) — targets the
+              # 400 response directly. The value is intentionally invalid
+              # (rank "KNIGHT" is not in the enum). Contracteer does not
+              # validate request values against the schema for 400 scenarios.
+              400_INVALID_MUSKETEER:
+                value:
+                  name: d'Artagnan
+                  rank: KNIGHT
+                  weapon: Rapier
+      responses:
+        '201':
+          description: Musketeer enlisted
+          headers:
+            Location:
+              description: URL of the newly created musketeer
+              schema:
+                type: string
+              # [Contracteer] Correlated example — the key D_ARTAGNAN_JOINS
+              # matches the request body, pairing request and response values
+              # into a single scenario.
+              examples:
+                D_ARTAGNAN_JOINS:
+                  value: /musketeers/4
+        '400':
+          description: Invalid input
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /musketeers/{id}:
+    get:
+      summary: Get a musketeer by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Musketeer identifier
+          schema:
+            type: integer
+            minimum: 1
+          # [Contracteer] Multiple features on one parameter:
+          # - ATHOS, PORTHOS: named examples correlated with 200 response body
+          # - 404_UNKNOWN_MUSKETEER: status-code-prefixed key targeting 404
+          # - 400_INVALID_ID: status-code-prefixed key with intentionally wrong
+          #   type (string instead of integer) targeting 400
+          examples:
+            ATHOS:
+              value: 1
+            PORTHOS:
+              value: 2
+            404_UNKNOWN_MUSKETEER:
+              value: 999
+            400_INVALID_ID:
+              value: abc
+      responses:
+        '200':
+          description: Musketeer found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Musketeer'
+              # [Contracteer] Response examples correlated with request
+              # parameter examples by shared keys (ATHOS, PORTHOS).
+              examples:
+                ATHOS:
+                  value:
+                    id: 1
+                    name: Athos
+                    rank: MUSKETEER
+                    weapon: Rapier
+                PORTHOS:
+                  value:
+                    id: 2
+                    name: Porthos
+                    rank: MUSKETEER
+                    weapon: Musket
+        '404':
+          description: Musketeer not found
+        '400':
+          description: Invalid musketeer ID
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /musketeers/{id}/missions:
+    get:
+      summary: Get missions assigned to a musketeer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Musketeer identifier
+          schema:
+            type: integer
+            minimum: 1
+          # [Contracteer] Correlated examples across multiple parameters —
+          # the key ATHOS_MISSIONS appears on both path and query parameters,
+          # linking them into a single scenario.
+          examples:
+            ATHOS_MISSIONS:
+              value: 1
+            # [Contracteer] This key has no example on the status
+            # parameter — the scenario only carries values for
+            # elements that have an example for its key.
+            404_UNKNOWN_MUSKETEER_MISSIONS:
+              value: 999
+        - name: status
+          in: query
+          required: false
+          description: Filter missions by status
+          schema:
+            type: string
+            enum:
+              - PLANNED
+              - IN_PROGRESS
+              - COMPLETED
+          examples:
+            ATHOS_MISSIONS:
+              value: COMPLETED
+      responses:
+        '200':
+          description: List of missions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Mission'
+              # [Contracteer] $ref to components/examples — Contracteer
+              # resolves example references the same way as schema references.
+              examples:
+                ATHOS_MISSIONS:
+                  $ref: '#/components/examples/ATHOS_MISSIONS'
+        '404':
+          description: Musketeer not found
+        # [Contracteer] No 400 examples here — Contracteer automatically
+        # generates verification cases using type-mismatch mutations
+        # (e.g., sending a string for the integer id parameter).
+        '400':
+          description: Invalid musketeer ID
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  # ---------------------------------------------------------------------------
+  # Missions
+  # ---------------------------------------------------------------------------
+  /missions:
+    get:
+      summary: List all missions
+      # [Contracteer] No examples — schema-only fallback, same as GET /musketeers.
+      responses:
+        '200':
+          description: List of missions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Mission'
+
+    post:
+      summary: Create a new mission
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMission'
+            # [Contracteer] Single example keyword (not examples) — Contracteer
+            # converts it to a synthetic key "_example" and applies the standard
+            # intersection rule.
+            example:
+              title: Rescue Constance
+              description: >-
+                Free Constance Bonacieux from
+                the clutches of Milady de Winter
+              status: PLANNED
+              musketeers:
+                - 4
+                - 1
+      responses:
+        '201':
+          description: Mission created
+          headers:
+            Location:
+              description: URL of the newly created mission
+              schema:
+                type: string
+              # [Contracteer] Single example keyword on response header —
+              # correlates with the request body via the synthetic "_example" key.
+              example: /missions/3
+        # [Contracteer] No 400 examples — automatic type-mismatch verification.
+        '400':
+          description: Invalid input
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /missions/{id}:
+    get:
+      summary: Get a mission by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Mission identifier
+          schema:
+            type: integer
+            minimum: 1
+          # [Contracteer] Same pattern as GET /musketeers/{id} — named
+          # examples correlated with 200 response body, plus a
+          # status-code-prefixed key targeting 404.
+          examples:
+            DIAMOND_STUDS:
+              value: 1
+            SIEGE_OF_LA_ROCHELLE:
+              value: 2
+            404_UNKNOWN_MISSION:
+              value: 999
+      responses:
+        '200':
+          description: Mission found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mission'
+              examples:
+                DIAMOND_STUDS:
+                  value:
+                    id: 1
+                    title: The Diamond Studs
+                    description: >-
+                      Retrieve the Queen's diamond studs
+                      from the Duke of Buckingham
+                    status: COMPLETED
+                    musketeers:
+                      - 1
+                      - 2
+                      - 3
+                      - 4
+                SIEGE_OF_LA_ROCHELLE:
+                  value:
+                    id: 2
+                    title: The Siege of La Rochelle
+                    description: >-
+                      Defend the bastion Saint-Gervais
+                      during the siege
+                    status: COMPLETED
+                    musketeers:
+                      - 1
+                      - 2
+                      - 3
+                      - 4
+        '404':
+          description: Mission not found
+        # [Contracteer] No 400 examples — automatic type-mismatch verification.
+        '400':
+          description: Invalid mission ID
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+# =============================================================================
+# Components
+# =============================================================================
+components:
+
+  # ===========================================================================
+  # Schemas
+  # ===========================================================================
+  schemas:
+    Musketeer:
+      type: object
+      required:
+        - id
+        - name
+        - rank
+        - weapon
+      properties:
+        id:
+          type: integer
+          minimum: 1
+        name:
+          type: string
+        rank:
+          type: string
+          enum:
+            - CADET
+            - MUSKETEER
+            - CAPTAIN
+        weapon:
+          type: string
+
+    Mission:
+      type: object
+      required:
+        - id
+        - title
+        - description
+        - status
+        - musketeers
+      properties:
+        id:
+          type: integer
+          minimum: 1
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum:
+            - PLANNED
+            - IN_PROGRESS
+            - COMPLETED
+        musketeers:
+          type: array
+          items:
+            type: integer
+            minimum: 1
+
+    CreateMusketeer:
+      type: object
+      required:
+        - name
+        - rank
+        - weapon
+      properties:
+        name:
+          type: string
+        rank:
+          type: string
+          enum:
+            - CADET
+            - MUSKETEER
+            - CAPTAIN
+        weapon:
+          type: string
+
+    CreateMission:
+      type: object
+      required:
+        - title
+        - description
+        - status
+        - musketeers
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum:
+            - PLANNED
+            - IN_PROGRESS
+            - COMPLETED
+        musketeers:
+          type: array
+          items:
+            type: integer
+            minimum: 1
+
+    # [Contracteer] Error responses use RFC 7807 Problem Details with a
+    # dedicated content type (application/problem+json), demonstrating that
+    # Contracteer handles different content types for success and error responses.
+    ProblemDetail:
+      type: object
+      required:
+        - type
+        - title
+        - status
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+
+  # ===========================================================================
+  # Examples
+  # ===========================================================================
+  examples:
+    ATHOS_MISSIONS:
+      value:
+        - id: 1
+          title: The Diamond Studs
+          description: >-
+            Retrieve the Queen's diamond studs
+            from the Duke of Buckingham
+          status: COMPLETED
+          musketeers:
+            - 1
+            - 2
+            - 3
+            - 4
+        - id: 2
+          title: The Siege of La Rochelle
+          description: >-
+            Defend the bastion Saint-Gervais
+            during the siege
+          status: COMPLETED
+          musketeers:
+            - 1
+            - 2
+            - 3
+            - 4
