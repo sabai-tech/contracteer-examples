@@ -6,6 +6,8 @@ against its OpenAPI specification using
 This project walks through the setup, the test data
 strategy, and what Contracteer generates from the spec.
 
+See the [Verify Your API with JUnit 5](https://sabai-tech.github.io/contracteer/latest/getting-started/verifier-junit/) guide for the full documentation.
+
 ## Prerequisites
 
 - Java 21

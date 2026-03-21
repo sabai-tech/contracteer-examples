@@ -7,6 +7,8 @@ This project walks through the test setup, how the mock
 server validates requests and determines responses, and
 what each test exercises.
 
+See the [Mock an API with Spring Boot](https://sabai-tech.github.io/contracteer/latest/getting-started/mockserver-spring/) guide for the full documentation.
+
 ## Prerequisites
 
 - Java 21

@@ -10,6 +10,8 @@ intentionally minimal: `java.net.http.HttpClient` with
 Jackson. The focus is on the mock server integration, not
 the client itself.
 
+See the [Mock an API Programmatically](https://sabai-tech.github.io/contracteer/latest/getting-started/mockserver/) guide for the full documentation.
+
 ## Prerequisites
 
 - Java 21
