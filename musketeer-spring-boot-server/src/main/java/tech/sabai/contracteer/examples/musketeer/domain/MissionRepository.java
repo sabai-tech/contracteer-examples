@@ -4,9 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface MissionRepository {
-  void save(Mission mission);
-
-  Mission create(CreateMission createMission);
+  Mission save(Mission mission);
 
   Optional<Mission> findById(int id);
 

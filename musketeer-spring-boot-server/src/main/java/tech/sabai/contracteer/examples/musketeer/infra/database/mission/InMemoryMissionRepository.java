@@ -1,7 +1,6 @@
-package tech.sabai.contracteer.examples.musketeer.infra.database;
+package tech.sabai.contracteer.examples.musketeer.infra.database.mission;
 
 import org.springframework.stereotype.Repository;
-import tech.sabai.contracteer.examples.musketeer.domain.CreateMission;
 import tech.sabai.contracteer.examples.musketeer.domain.Mission;
 import tech.sabai.contracteer.examples.musketeer.domain.MissionRepository;
 import tech.sabai.contracteer.examples.musketeer.domain.MissionStatus;
@@ -18,21 +17,12 @@ public class InMemoryMissionRepository implements MissionRepository {
   private final AtomicInteger idGenerator = new AtomicInteger(0);
 
   @Override
-  public void save(Mission mission) {
-    store.put(mission.id(), mission);
-    idGenerator.updateAndGet(current -> Math.max(current, mission.id()));
-  }
-
-  @Override
-  public Mission create(CreateMission createMission) {
-    var mission = new Mission(
-            idGenerator.incrementAndGet(),
-            createMission.title(),
-            createMission.description(),
-            createMission.status(),
-            createMission.musketeers());
-    store.put(mission.id(), mission);
-    return mission;
+  public Mission save(Mission mission) {
+    var id = mission.id() == null ? idGenerator.incrementAndGet() : mission.id();
+    idGenerator.updateAndGet(current -> Math.max(current, id));
+    var persisted = new Mission(id, mission.title(), mission.description(), mission.status(), mission.musketeers());
+    store.put(id, persisted);
+    return persisted;
   }
 
   @Override

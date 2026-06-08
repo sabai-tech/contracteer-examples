@@ -4,9 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface MusketeerRepository {
-  void save(Musketeer musketeer);
-
-  Musketeer create(CreateMusketeer createMusketeer);
+  Musketeer save(Musketeer musketeer);
 
   Optional<Musketeer> findById(int id);
 

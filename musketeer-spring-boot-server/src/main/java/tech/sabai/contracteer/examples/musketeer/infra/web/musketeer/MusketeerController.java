@@ -1,4 +1,4 @@
-package tech.sabai.contracteer.examples.musketeer.infra.web;
+package tech.sabai.contracteer.examples.musketeer.infra.web.musketeer;
 
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -34,7 +34,8 @@ public class MusketeerController {
 
   @PostMapping("/musketeers")
   public ResponseEntity<Void> createMusketeer(@Valid @RequestBody CreateMusketeer createMusketeer) {
-    var musketeer = musketeerRepository.create(createMusketeer);
+    var musketeer = musketeerRepository.save(createMusketeer.toMusketeer());
+
     return ResponseEntity
             .created(URI.create("/musketeers/" + musketeer.id()))
             .build();

@@ -1,12 +1,12 @@
 package tech.sabai.contracteer.examples.musketeer.domain;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-
 public record Musketeer(
-        int id,
-        @NotBlank String name,
-        @NotNull Rank rank,
-        @NotBlank String weapon
+        Integer id,
+        String name,
+        Rank rank,
+        String weapon
 ) {
+  public Musketeer(String name, Rank rank, String weapon) {
+    this(null, name, rank, weapon);
+  }
 }

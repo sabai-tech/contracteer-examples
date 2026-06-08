@@ -1,9 +1,8 @@
-package tech.sabai.contracteer.examples.musketeer.infra.web;
+package tech.sabai.contracteer.examples.musketeer.infra.web.mission;
 
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import tech.sabai.contracteer.examples.musketeer.domain.CreateMission;
 import tech.sabai.contracteer.examples.musketeer.domain.Mission;
 import tech.sabai.contracteer.examples.musketeer.domain.MissionRepository;
 
@@ -33,7 +32,8 @@ public class MissionController {
 
   @PostMapping("/missions")
   public ResponseEntity<Void> createMission(@Valid @RequestBody CreateMission createMission) {
-    var mission = missionRepository.create(createMission);
+    var mission = missionRepository.save(createMission.toMission());
+
     return ResponseEntity
             .created(URI.create("/missions/" + mission.id()))
             .build();
