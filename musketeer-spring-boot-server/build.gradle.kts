@@ -31,7 +31,7 @@ dependencies {
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.6")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation("tech.sabai.contracteer:contracteer-verifier-junit:2.0.0")
+    testImplementation("tech.sabai.contracteer:contracteer-verifier-junit:3.1.0")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

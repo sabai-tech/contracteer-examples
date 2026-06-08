@@ -23,7 +23,7 @@ dependencies {
     // JSON serialization
     implementation("com.fasterxml.jackson.core:jackson-databind:2.18.3")
 
-    testImplementation("tech.sabai.contracteer:contracteer-mockserver:2.0.0")
+    testImplementation("tech.sabai.contracteer:contracteer-mockserver:3.1.0")
     testImplementation("org.assertj:assertj-core:3.27.3")
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")

@@ -28,7 +28,7 @@ dependencies {
     implementation("tech.sabai.contracteer.examples:musketeer-spec:1.0.0")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation("tech.sabai.contracteer:contracteer-mockserver-spring:2.0.0")
+    testImplementation("tech.sabai.contracteer:contracteer-mockserver-spring:3.1.0")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

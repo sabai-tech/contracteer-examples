@@ -12,6 +12,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import tech.sabai.contracteer.core.Result;
+import tech.sabai.contracteer.core.operation.ApiOperation;
 import tech.sabai.contracteer.core.swagger.OpenApiLoader;
 import tech.sabai.contracteer.examples.musketeer.client.CreateMission;
 import tech.sabai.contracteer.examples.musketeer.client.CreateMusketeer;
@@ -21,7 +23,6 @@ import tech.sabai.contracteer.examples.musketeer.client.MusketeerApiException;
 import java.util.List;
 import tech.sabai.contracteer.mockserver.MockServer;
 
-import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -33,9 +34,11 @@ class MusketeerApiClientTest {
   @BeforeAll
   static void startMockServer() {
     var result = OpenApiLoader.loadOperations("classpath:musketeer-api.yaml");
-    if (result.isFailure()) throw new IllegalStateException("Failed to load spec: " + result.errors());
+    if (!(result instanceof Result.Success<List<ApiOperation>> success)) {
+      throw new IllegalStateException("Failed to load spec: " + result.errors());
+    }
 
-    mockServer = new MockServer(requireNonNull(result.getValue()));
+    mockServer = new MockServer(success.getValue());
     mockServer.start();
   }
 
